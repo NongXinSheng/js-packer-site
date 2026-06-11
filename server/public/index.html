@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JS Packer · 在线压缩 / 混淆 / 打包</title>
+  <meta name="description" content="在线 JS 压缩、混淆与 eval Packer 打包工具" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- 顶部 -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">&gt;_</span>
+        <span class="brand-name">JS&nbsp;Packer</span>
+        <span class="brand-sub">压缩 · 混淆 · 打包</span>
+      </div>
+      <a class="topbar-link" id="healthDot" title="服务状态">●&nbsp;服务在线</a>
+    </header>
+
+    <!-- 流水线（签名元素） -->
+    <section class="pipeline" id="pipeline">
+      <div class="stage" data-stage="original">
+        <div class="stage-dot"></div>
+        <div class="stage-name">原始</div>
+        <div class="stage-size" data-size="original">—</div>
+      </div>
+      <div class="stage-arrow">→</div>
+      <div class="stage" data-stage="min">
+        <div class="stage-dot"></div>
+        <div class="stage-name">压缩</div>
+        <div class="stage-size" data-size="min">—</div>
+      </div>
+      <div class="stage-arrow">→</div>
+      <div class="stage" data-stage="obf">
+        <div class="stage-dot"></div>
+        <div class="stage-name">混淆</div>
+        <div class="stage-size" data-size="obf">—</div>
+      </div>
+      <div class="stage-arrow">→</div>
+      <div class="stage" data-stage="pack">
+        <div class="stage-dot"></div>
+        <div class="stage-name">打包</div>
+        <div class="stage-size" data-size="pack">—</div>
+      </div>
+    </section>
+
+    <main class="grid">
+      <!-- 左侧：输入与选项 -->
+      <section class="panel panel-input">
+        <div class="panel-head">
+          <h2 class="panel-title">输入</h2>
+          <div class="panel-actions">
+            <label class="btn btn-ghost" for="fileInput">上传 .js</label>
+            <input type="file" id="fileInput" accept=".js,.txt,text/javascript" hidden />
+            <button class="btn btn-ghost" id="sampleBtn" type="button">示例</button>
+            <button class="btn btn-ghost" id="clearBtn" type="button">清空</button>
+          </div>
+        </div>
+
+        <textarea
+          id="codeInput"
+          class="code-area"
+          spellcheck="false"
+          placeholder="在此粘贴 JS 代码，或点击上方「上传 .js」"></textarea>
+
+        <div class="panel-head panel-head-tight">
+          <h2 class="panel-title">流程</h2>
+        </div>
+        <div class="steps">
+          <label class="chk"><input type="checkbox" id="stepMinify" checked /> <span>压缩 (Terser)</span></label>
+          <label class="chk"><input type="checkbox" id="stepObfuscate" checked /> <span>混淆 (obfuscator)</span></label>
+          <label class="chk"><input type="checkbox" id="stepPack" checked /> <span>Packer 打包</span></label>
+        </div>
+
+        <details class="adv">
+          <summary>混淆参数</summary>
+          <div class="adv-grid">
+            <label class="chk"><input type="checkbox" id="optCompact" checked /> <span>compact</span></label>
+            <label class="chk"><input type="checkbox" id="optStringArray" checked /> <span>stringArray</span></label>
+            <label class="chk"><input type="checkbox" id="optRenameGlobals" /> <span>renameGlobals</span></label>
+            <div class="adv-row">
+              <span class="adv-label">编码</span>
+              <select id="optEncoding">
+                <option value="base64" selected>base64</option>
+                <option value="rc4">rc4</option>
+                <option value="none">none</option>
+              </select>
+            </div>
+            <div class="adv-row">
+              <span class="adv-label">阈值</span>
+              <input type="number" id="optThreshold" min="0" max="1" step="0.05" value="0.75" />
+            </div>
+          </div>
+
+          <label class="chk chk-warn">
+            <input type="checkbox" id="optStrong" />
+            <span>强混淆模式（控制流扁平化 / 死代码注入 / 自我防护）</span>
+          </label>
+          <p class="warn-text" id="strongWarn" hidden>
+            强混淆可能导致 H5 / WebView / 小程序运行异常，请逐项测试后再上线。
+          </p>
+        </details>
+
+        <button class="btn btn-primary btn-build" id="buildBtn" type="button">
+          生成
+        </button>
+        <p class="hint" id="inputHint">仅做字符串处理，不会在服务器执行你的代码。</p>
+      </section>
+
+      <!-- 右侧：输出 -->
+      <section class="panel panel-output">
+        <div class="panel-head">
+          <h2 class="panel-title">输出</h2>
+          <div class="tabs" id="outTabs"></div>
+        </div>
+
+        <div class="output-wrap">
+          <pre class="code-out" id="codeOutput"><span class="placeholder">生成后在此显示结果…</span></pre>
+        </div>
+
+        <div class="out-foot">
+          <div class="out-stat" id="outStat"></div>
+          <div class="out-actions">
+            <button class="btn btn-ghost" id="copyBtn" type="button" disabled>复制</button>
+            <button class="btn btn-primary" id="downloadBtn" type="button" disabled>下载</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <span>本地临时处理 · 不留存代码</span>
+      <span class="foot-sep">/</span>
+      <span>Terser + javascript-obfuscator + 自定义 Packer</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

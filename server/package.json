@@ -1,0 +1,20 @@
+{
+  "name": "js-packer-server",
+  "version": "1.0.0",
+  "description": "在线 JS 压缩 / 混淆 / Packer 打包工具 - 后端服务",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node app.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "javascript-obfuscator": "^4.1.1",
+    "terser": "^5.31.6"
+  },
+  "license": "MIT"
+}
