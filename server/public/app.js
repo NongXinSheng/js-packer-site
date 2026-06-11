@@ -7,6 +7,8 @@
   var els = {
     code: $("codeInput"),
     file: $("fileInput"),
+    drop: $("dropZone"),
+    fileMeta: $("fileMeta"),
     sample: $("sampleBtn"),
     clear: $("clearBtn"),
     build: $("buildBtn"),
@@ -34,7 +36,10 @@
     filename: "code.js",
     result: null,     // 后端返回的 result
     activeKey: null,  // 当前展示的 tab: min | obf | pack
+    dragDepth: 0,
   };
+
+  var DEFAULT_FILE_META = "支持 .js / .mjs / .cjs / .txt，最大 5MB，也可以直接粘贴代码";
 
   // ---- 工具函数 ----
   function fmtSize(bytes) {
@@ -55,6 +60,29 @@
   function baseName(name) {
     // 去掉扩展名，得到基础名
     return (name || "code").replace(/\.[^.]+$/, "") || "code";
+  }
+
+  function resetOutput() {
+    state.result = null;
+    state.activeKey = null;
+    els.output.innerHTML = '<span class="placeholder">生成后在此显示结果…</span>';
+    els.outTabs.innerHTML = "";
+    els.outStat.textContent = "";
+    els.copy.disabled = true;
+    els.download.disabled = true;
+    resetPipeline();
+  }
+
+  function setInputCode(code, filename) {
+    els.code.value = code || "";
+    state.filename = filename || "code.js";
+    resetOutput();
+
+    if (filename) {
+      els.fileMeta.textContent = "当前文件：" + filename + " · " + fmtSize(new Blob([code || ""]).size);
+    } else {
+      els.fileMeta.textContent = DEFAULT_FILE_META;
+    }
   }
 
   // ---- 流水线显示 ----
@@ -95,6 +123,7 @@
       b.className = "tab";
       b.dataset.key = k.key;
       b.textContent = k.label;
+      b.type = "button";
       b.addEventListener("click", function () { showKey(k.key); });
       els.outTabs.appendChild(b);
     });
@@ -129,7 +158,7 @@
   function build() {
     var code = els.code.value;
     if (!code.trim()) {
-      toast("请输入 JS 代码", "err");
+      toast("请输入或上传 JS 代码", "err");
       els.code.focus();
       return;
     }
@@ -207,6 +236,104 @@
     renderTabs(result);
   }
 
+  // ---- 文件上传 / 拖拽上传 ----
+  function hasDragFiles(e) {
+    var types = e.dataTransfer && e.dataTransfer.types;
+    if (!types) return false;
+    for (var i = 0; i < types.length; i++) {
+      if (types[i] === "Files") return true;
+    }
+    return false;
+  }
+
+  function isAllowedFile(file) {
+    var nameOk = /\.(js|mjs|cjs|txt)$/i.test(file.name || "");
+    var typeOk = /javascript|ecmascript|text\/plain|text\/x-javascript/i.test(file.type || "");
+    return nameOk || typeOk || !file.type;
+  }
+
+  function setDropActive(active) {
+    if (!els.drop) return;
+    els.drop.classList.toggle("drag-over", !!active);
+  }
+
+  function readFile(file) {
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast("文件超过 5MB", "err");
+      return;
+    }
+
+    if (!isAllowedFile(file)) {
+      toast("仅支持 .js / .mjs / .cjs / .txt 文件", "err");
+      return;
+    }
+
+    var reader = new FileReader();
+
+    reader.onload = function () {
+      setInputCode(reader.result, file.name || "code.js");
+      toast("已载入 " + (file.name || "文件"), "ok");
+      els.code.focus();
+    };
+
+    reader.onerror = function () {
+      toast("文件读取失败", "err");
+    };
+
+    reader.readAsText(file, "utf-8");
+  }
+
+  function bindDragUpload() {
+    if (!els.drop) return;
+
+    ["dragenter", "dragover"].forEach(function (name) {
+      els.drop.addEventListener(name, function (e) {
+        if (!hasDragFiles(e)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (name === "dragenter") state.dragDepth++;
+        setDropActive(true);
+      });
+    });
+
+    els.drop.addEventListener("dragleave", function (e) {
+      if (!hasDragFiles(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      state.dragDepth--;
+      if (state.dragDepth <= 0) {
+        state.dragDepth = 0;
+        setDropActive(false);
+      }
+    });
+
+    els.drop.addEventListener("drop", function (e) {
+      if (!hasDragFiles(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      state.dragDepth = 0;
+      setDropActive(false);
+
+      var files = e.dataTransfer.files;
+      if (!files || !files.length) return;
+
+      if (files.length > 1) {
+        toast("已选择第 1 个文件：" + files[0].name, "ok");
+      }
+      readFile(files[0]);
+    });
+
+    // 防止把文件拖到页面其他区域时，浏览器直接打开文件
+    ["dragover", "drop"].forEach(function (name) {
+      document.addEventListener(name, function (e) {
+        if (!hasDragFiles(e)) return;
+        e.preventDefault();
+      });
+    });
+  }
+
   // ---- 下载 ----
   function download() {
     if (!state.result || !state.activeKey) return;
@@ -276,38 +403,22 @@
   els.copy.addEventListener("click", copyOut);
 
   els.sample.addEventListener("click", function () {
-    els.code.value = SAMPLE;
-    state.filename = "money_reward.js";
+    setInputCode(SAMPLE, "money_reward.js");
   });
 
   els.clear.addEventListener("click", function () {
     els.code.value = "";
     state.filename = "code.js";
-    state.result = null;
-    state.activeKey = null;
-    els.output.innerHTML = '<span class="placeholder">生成后在此显示结果…</span>';
-    els.outTabs.innerHTML = "";
-    els.outStat.textContent = "";
-    els.copy.disabled = true;
-    els.download.disabled = true;
-    resetPipeline();
+    els.fileMeta.textContent = DEFAULT_FILE_META;
+    els.inputHint.classList.remove("err");
+    els.inputHint.textContent = "仅做字符串处理，不会在服务器执行你的代码。";
+    resetOutput();
+    els.code.focus();
   });
 
   els.file.addEventListener("change", function (e) {
     var f = e.target.files && e.target.files[0];
-    if (!f) return;
-    if (f.size > 5 * 1024 * 1024) {
-      toast("文件超过 5MB", "err");
-      return;
-    }
-    var reader = new FileReader();
-    reader.onload = function () {
-      els.code.value = reader.result;
-      state.filename = f.name || "code.js";
-      toast("已载入 " + f.name, "ok");
-    };
-    reader.onerror = function () { toast("文件读取失败", "err"); };
-    reader.readAsText(f, "utf-8");
+    if (f) readFile(f);
     els.file.value = "";
   });
 
@@ -322,6 +433,9 @@
       build();
     }
   });
+
+  bindDragUpload();
+  resetPipeline();
 
   // ---- 健康检查 ----
   fetch("./api/health")

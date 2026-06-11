@@ -13,14 +13,29 @@
     <header class="topbar">
       <div class="brand">
         <span class="brand-mark">&gt;_</span>
-        <span class="brand-name">JS&nbsp;Packer</span>
-        <span class="brand-sub">压缩 · 混淆 · 打包</span>
+        <div>
+          <div class="brand-name">JS&nbsp;Packer</div>
+          <div class="brand-sub">压缩 · 混淆 · 打包</div>
+        </div>
       </div>
       <a class="topbar-link" id="healthDot" title="服务状态">●&nbsp;服务在线</a>
     </header>
 
-    <!-- 流水线（签名元素） -->
-    <section class="pipeline" id="pipeline">
+    <!-- 简洁说明 -->
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Online JavaScript Tool</p>
+        <h1>蓝白简约的 JS 处理工作台</h1>
+        <p class="hero-desc">支持代码粘贴、点击上传和拖拽上传，快速完成压缩、混淆与 Packer 打包。</p>
+      </div>
+      <div class="hero-card">
+        <span>快捷键</span>
+        <strong>Ctrl / ⌘ + Enter</strong>
+      </div>
+    </section>
+
+    <!-- 流水线 -->
+    <section class="pipeline" id="pipeline" aria-label="处理流程">
       <div class="stage" data-stage="original">
         <div class="stage-dot"></div>
         <div class="stage-name">原始</div>
@@ -52,18 +67,28 @@
         <div class="panel-head">
           <h2 class="panel-title">输入</h2>
           <div class="panel-actions">
-            <label class="btn btn-ghost" for="fileInput">上传 .js</label>
-            <input type="file" id="fileInput" accept=".js,.txt,text/javascript" hidden />
             <button class="btn btn-ghost" id="sampleBtn" type="button">示例</button>
             <button class="btn btn-ghost" id="clearBtn" type="button">清空</button>
           </div>
         </div>
 
-        <textarea
-          id="codeInput"
-          class="code-area"
-          spellcheck="false"
-          placeholder="在此粘贴 JS 代码，或点击上方「上传 .js」"></textarea>
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-inner">
+            <div class="drop-icon" aria-hidden="true">⇧</div>
+            <div class="drop-copy">
+              <strong>拖拽 JS 文件到这里</strong>
+              <span id="fileMeta">支持 .js / .mjs / .cjs / .txt，最大 5MB，也可以直接粘贴代码</span>
+            </div>
+            <label class="btn btn-soft" for="fileInput">选择文件</label>
+            <input type="file" id="fileInput" accept=".js,.mjs,.cjs,.txt,text/javascript,application/javascript,text/plain" hidden />
+          </div>
+
+          <textarea
+            id="codeInput"
+            class="code-area"
+            spellcheck="false"
+            placeholder="在此粘贴 JS 代码，或把 .js 文件拖拽到这里"></textarea>
+        </div>
 
         <div class="panel-head panel-head-tight">
           <h2 class="panel-title">流程</h2>
